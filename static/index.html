@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ChatGPT UI</title>
+    <style>
+        body {
+            background-color: #f5f8fa;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #434141;
+        }
+
+        .chat-container {
+            width: 900px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #chat-messages {
+            height: 360px;
+            padding: 15px;
+            overflow-y: scroll;
+            border: 1px solid #dddddd;
+            border-radius: 5px;
+            background-color: #f8f8f8;
+            
+        }
+
+        #chat-messages .message-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        #chat-messages .message-container.user  div{
+        margin-left: auto;
+        margin-right: 0;
+        background-color: #0366d6;
+        color: #ffffff;
+        border-radius: 5px 0 5px 5px;
+        padding: 10px;
+    }
+    
+
+    #chat-messages .message-container.bot  div{
+            margin-left: 0px;
+            background-color: #b3f9f7;
+            color: #333333;
+            border-radius: 0 5px 5px 5px;
+            padding: 10px;
+        }
+
+        .code-snippet-container {
+            margin-top: 5px;
+            padding: 10px;
+            background-color: #030303;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            color: #f5eded;
+        }
+
+        .user-input {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            
+        }
+
+
+        .user-input input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #dddddd;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-input input[type="text"]:focus {
+            outline: none;
+        }
+
+        .user-input button {
+            padding: 10px 15px;
+            background-color: #0366d6;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* .message {
+            padding: 10px 15px;
+            max-width: 75%;
+            word-wrap: break-word;
+        } */
+
+        
+        #chat-messages .loader div{
+            color: #030303;
+    display: inline-block;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    font-size: 24px;
+    animation: loader 1.4s infinite ease-in-out;
+}
+
+@keyframes loader {
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+
+    </style>
+</head>
+<body>
+    <h2 align="center" style="color: #ffffff;">Chat GPT Clone</h2>
+    <div class="chat-container">
+        <div id="chat-messages"></div>
+        <div class="user-input">
+            <input type="text" id="user-input" placeholder="Enter your prompt...">
+            <button id="send-button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script>
+        // Send message to the server and display the response
+        function sendMessage() {
+            const userInput = document.getElementById("user-input");
+            const message = userInput.value.trim();
+            if (message === "") {
+                return;
+            }
+
+            const chatMessages = document.getElementById("chat-messages");
+            const userMessageElement = createMessageElement(message, "user");
+            chatMessages.appendChild(userMessageElement);
+
+            const loader = createLoaderElement();
+            chatMessages.appendChild(loader);
+
+            fetch("http://localhost:5000/generate-text", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ prompt: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const generatedText = data.generated_text;
+                const botMessageElement = createMessageElement(generatedText, "bot");
+                chatMessages.replaceChild(botMessageElement, loader);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+
+            userInput.value = "";
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function createMessageElement(message, sender) {
+  const messageContainer = document.createElement("div");
+  messageContainer.classList.add("message-container", sender);
+
+  const codeRegex = /```([\s\S]+?)```/g;
+  const numericalListRegex = /^\d+\.\s(.*)$/gm;
+  const tableRegex = /(\|.*\|.*\|)([\s\S]*)(\|.*\|.*\|)/g;
+
+  let lastIndex = 0;
+  let matches;
+
+  while ((matches = codeRegex.exec(message)) !== null) {
+    const textBeforeCode = message.substring(lastIndex, matches.index);
+    const textAfterCode = message.substring(codeRegex.lastIndex, matches.index + matches[0].length);
+
+    const contentContainer = document.createElement("div");
+    contentContainer.classList.add("message-content");
+    messageContainer.appendChild(contentContainer);
+
+    const textBeforeCodeElement = document.createElement("div");
+    textBeforeCodeElement.textContent = textBeforeCode;
+    contentContainer.appendChild(textBeforeCodeElement);
+
+    const codeSnippetContainer = document.createElement("div");
+    codeSnippetContainer.classList.add("code-snippet-container");
+
+    let codeSnippet = matches[1].trim();
+    if (codeSnippet.startsWith("python")) {
+      codeSnippet = codeSnippet.substring(6).trim();
+    }
+
+    const codeSnippetElement = document.createElement("pre");
+    codeSnippetElement.textContent = codeSnippet;
+    codeSnippetContainer.appendChild(codeSnippetElement);
+
+    contentContainer.appendChild(codeSnippetContainer);
+
+    lastIndex = codeRegex.lastIndex;
+
+    const textAfterCodeElement = document.createElement("div");
+    textAfterCodeElement.textContent = textAfterCode;
+    contentContainer.appendChild(textAfterCodeElement);
+  }
+
+  if (lastIndex < message.length) {
+    const remainingText = message.substring(lastIndex);
+
+    const remainingTextElement = document.createElement("div");
+
+    if (remainingText.match(numericalListRegex)) {
+      const listContainer = document.createElement("ol");
+
+      remainingText.replace(numericalListRegex, (match, text) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = text.trim();
+        listContainer.appendChild(listItem);
+      });
+
+      remainingTextElement.appendChild(listContainer);
+    } else if (remainingText.match(tableRegex)) {
+      const tableContainer = document.createElement("div");
+      tableContainer.classList.add("table-container");
+      const tableData = remainingText.match(tableRegex);
+
+      tableData.forEach((tableMatch) => {
+        const tableRows = tableMatch.split("\n").map((row) => row.trim()).filter((row) => row !== "");
+
+        const table = document.createElement("table");
+        const tableHeader = document.createElement("thead");
+        const tableBody = document.createElement("tbody");
+
+        const headerRow = tableRows[0];
+        const headerData = headerRow.split("|").map((cell) => cell.trim()).filter((cell) => cell !== "");
+
+        headerData.forEach((header) => {
+          const tableHeaderCell = document.createElement("th");
+          const headerText = document.createElement("div");
+          headerText.textContent = header;
+          tableHeaderCell.appendChild(headerText);
+          tableHeader.appendChild(tableHeaderCell);
+        });
+
+        for (let i = 2; i < tableRows.length; i++) {
+          const rowData = tableRows[i].split("|").map((cell) => cell.trim()).filter((cell) => cell !== "");
+
+          const tableRow = document.createElement("tr");
+
+          rowData.forEach((data) => {
+            const tableCell = document.createElement("td");
+            tableCell.textContent = data;
+            tableRow.appendChild(tableCell);
+          });
+
+          tableBody.appendChild(tableRow);
+        }
+
+        table.appendChild(tableHeader);
+        table.appendChild(tableBody);
+        tableContainer.appendChild(table);
+      });
+
+      remainingTextElement.appendChild(tableContainer);
+    } else {
+      remainingTextElement.textContent = remainingText;
+    }
+
+    messageContainer.appendChild(remainingTextElement);
+  }
+
+  return messageContainer;
+}
+
+
+
+function createLoaderElement() {
+  const loader = document.createElement("div");
+  loader.classList.add("loader");
+  loader.textContent = "..."; // Set initial content
+
+  // Update content with animation
+  setInterval(() => {
+    loader.textContent += ".";
+    if (loader.textContent.length > 3) {
+      loader.textContent = ".";
+    }
+  }, 500);
+
+  return loader;
+}
+
+
+
+
+
+function handleKeyDown(event) {
+  if (event.keyCode === 13) {
+    event.preventDefault(); // Prevent the default Enter key behavior (e.g., line break in textarea)
+    document.getElementById("send-button").click(); // Trigger click event on the send button
+  }
+}
+
+// Add event listener for keydown event on the input element
+document.getElementById("user-input").addEventListener("keydown", handleKeyDown);
+
+    </script>
+</body>
+</html>
