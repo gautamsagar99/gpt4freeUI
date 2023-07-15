@@ -21,7 +21,7 @@ git clone https://github.com/gautamsagar99/gpt4freeUI.git
 2. Navigate to the project directory:
 
 ```
-cd gpt4free
+cd gpt4freeUI
 ```
 
 3. (Recommended) Create a virtual environment to manage Python packages for your project:
