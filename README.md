@@ -47,11 +47,15 @@ pip install -r requirements.txt
 
 6. Run the application
 
+```
 uvicorn main:app --reload --port 5000
+```
 
 7. open browser and type below URL
 
+```
 http://localhost:5000/
+```
 
 Now your chat gpt application is ready to use.
 ...
