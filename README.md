@@ -64,4 +64,4 @@ Note:
 
 This application is build on top of gpt4free project.
 For more try to read the README1.md file.
-or you can file at https://github.com/xtekky/gpt4free.git
+or you can find more at https://github.com/xtekky/gpt4free.git
