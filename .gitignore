@@ -32,3 +32,6 @@ cookie.json
 dist/
 
 mygptApplication
+
+g4f/__pycache__
+g4f/.v1
